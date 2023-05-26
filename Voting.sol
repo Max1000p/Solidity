@@ -4,10 +4,7 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 
 contract Voting is Ownable{
     
-    uint previousStatus;
-    uint proposalexist;
-    uint proposalId;
-    uint public winningProposalId;
+    uint winningProposalId;
 
     struct Voter {
         bool isRegistered;
@@ -62,22 +59,22 @@ contract Voting is Ownable{
     } 
 
     // Only Administrator can change start proposal session
-    function startProposalsRegistration() public onlyOwner checkStatus(WorkflowStatus.RegisteringVoters){
+    function startProposalsRegistration() external onlyOwner checkStatus(WorkflowStatus.RegisteringVoters){
         workflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
         emit WorkflowStatusChange(WorkflowStatus.RegisteringVoters, workflowStatus);
     }
 
     // Adminstrator endind proposal session
-    function endProposalsRegistration() public onlyOwner checkStatus(WorkflowStatus.ProposalsRegistrationStarted) {
+    function endProposalsRegistration() external onlyOwner checkStatus(WorkflowStatus.ProposalsRegistrationStarted) {
             workflowStatus = WorkflowStatus.ProposalsRegistrationEnded;
             emit WorkflowStatusChange(WorkflowStatus.ProposalsRegistrationStarted, workflowStatus);
     }
     // Is Proposal exist?
-    function isProposalExist(string memory _proposal) private returns(uint){
-        proposalexist = 0;
+    function isProposalExist(string memory _proposal) private view returns(bool){
+        bool proposalexist;
         for (uint i=0;i < proposals.length; i++){
             if (keccak256(abi.encodePacked(proposals[i].description)) == keccak256(abi.encodePacked(_proposal))) {
-                proposalexist++;
+                proposalexist=true;
             }
         }
         return proposalexist;
@@ -85,10 +82,10 @@ contract Voting is Ownable{
     
     // Proposal Session start, voters in whitelist can record name during session
     function addProposal(string memory _description) external isWhitelisted checkStatus(WorkflowStatus.ProposalsRegistrationStarted){
-        require( uint8(isProposalExist(_description)) == 0, "Proposal is already in proposal list");
+        require(!isProposalExist(_description), "Proposal is already in proposal list");
         Proposal memory proposal = Proposal(_description, 0);
         proposals.push(proposal);
-        proposalId = proposals.length - 1;
+        uint proposalId = proposals.length - 1;
         emit ProposalRegistered(proposalId);
     }
 
@@ -116,8 +113,8 @@ contract Voting is Ownable{
     }
 
     function VotesTallied() public onlyOwner checkStatus(WorkflowStatus.VotingSessionEnded){
-        uint VoteIndex = 0;
-        uint score = 0;
+        uint VoteIndex;
+        uint score;
         for (uint i=0;i<proposals.length; i++){
             if (proposals[i].voteCount > score) {
                 VoteIndex = i;
