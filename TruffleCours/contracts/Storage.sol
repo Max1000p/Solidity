@@ -3,12 +3,10 @@ pragma solidity >=0.4.16 <0.9.0;
 
 contract Storage {
     uint storedData;
-    address Owner;
 
-    constructor() payable {
-        (bool success, )= address(this).call{value: msg.value}("");
-        require (success, "transfer fails");
-        set(12);
+    constructor(uint _setter) payable {
+
+        storedData = _setter;
     }
 
     function getBalance() external view returns(uint){
