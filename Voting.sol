@@ -20,7 +20,7 @@ contract Voting is Ownable{
     mapping(address=>Voter) voters;
 
     // Dynamic array proposal
-    Proposal[] public proposals;
+    Proposal[]  proposals;
 
     /* Votre smart contract doit définir une énumération qui gère les différents états d’un vote */
     enum WorkflowStatus {
@@ -53,8 +53,7 @@ contract Voting is Ownable{
     // Only administrator - add voters in Whitelist
     function addVoter(address _voterAddress) external onlyOwner {
         require(!voters[_voterAddress].isRegistered, "Voter already exists");
-        Voter storage voter = voters[_voterAddress];
-        voter.isRegistered = true;
+        voters[_voterAddress].isRegistered = true;
         emit VoterRegistered(_voterAddress);
     } 
 
@@ -90,29 +89,28 @@ contract Voting is Ownable{
     }
 
     // Administrator starts voting session
-    function startVotingSession() public onlyOwner checkStatus(WorkflowStatus.ProposalsRegistrationEnded) {
+    function startVotingSession() external onlyOwner checkStatus(WorkflowStatus.ProposalsRegistrationEnded) {
         workflowStatus = WorkflowStatus.VotingSessionStarted;
         emit WorkflowStatusChange(WorkflowStatus.ProposalsRegistrationEnded, workflowStatus);
     }
 
     // Administrator stop voting session
-    function endVotingSession() public onlyOwner checkStatus(WorkflowStatus.VotingSessionStarted) {
+    function endVotingSession() external onlyOwner checkStatus(WorkflowStatus.VotingSessionStarted) {
         workflowStatus = WorkflowStatus.VotingSessionEnded;
         emit WorkflowStatusChange(WorkflowStatus.VotingSessionStarted, workflowStatus);
     }
 
     // Whitelist voter only can vote in voting session started
-    function vote(uint _proposalId) public isWhitelisted checkStatus(WorkflowStatus.VotingSessionStarted){
+    function vote(uint _proposalId) external isWhitelisted checkStatus(WorkflowStatus.VotingSessionStarted){
         require(_proposalId < proposals.length, "Invalid proposal ID.");
         require(!voters[msg.sender].hasVoted, "Already voted");
-        Voter storage elector = voters[msg.sender];
-        elector.hasVoted = true;
-        elector.votedProposalId = _proposalId;
+        voters[msg.sender].hasVoted = true;
+        voters[msg.sender].votedProposalId = _proposalId;
         proposals[_proposalId].voteCount++;
         emit Voted(msg.sender, _proposalId);
     }
 
-    function VotesTallied() public onlyOwner checkStatus(WorkflowStatus.VotingSessionEnded){
+    function VotesTallied() external onlyOwner checkStatus(WorkflowStatus.VotingSessionEnded){
         uint VoteIndex;
         uint score;
         for (uint i=0;i<proposals.length; i++){
@@ -127,9 +125,7 @@ contract Voting is Ownable{
     }
 
     
-    function getWinner() public view returns(string memory){
+    function getWinner() external view returns(string memory){
         require(workflowStatus == WorkflowStatus.VotesTallied, "Votes are not tallied yet");
         return proposals[winningProposalId].description;
     }
-
-}
